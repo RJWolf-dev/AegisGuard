@@ -1,0 +1,8 @@
+{
+  "name": "AegisGuard - Cyber Security & Privacy Hub",
+  "description": "Interactive cyber security education, daily defense tips, and real-time vulnerability scanning suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

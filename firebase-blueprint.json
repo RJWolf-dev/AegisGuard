@@ -1,0 +1,233 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with defense streak and progress metrics",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Firebase Auth user identifier",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 128
+        },
+        "streakDays": {
+          "type": "number",
+          "description": "Current active defense streak count"
+        },
+        "completedTips": {
+          "type": "array",
+          "description": "List of completed daily tip IDs"
+        },
+        "completedGuides": {
+          "type": "array",
+          "description": "List of completed system hardening guide IDs"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account registration timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Profile last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["userId", "streakDays", "completedTips", "completedGuides", "createdAt", "updatedAt"]
+    },
+    "ScanRecord": {
+      "title": "ScanRecord",
+      "description": "Persisted vulnerability scan log for audit history",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Scan unique identifier",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "User who ran the vulnerability scan",
+          "maxLength": 128
+        },
+        "scanType": {
+          "type": "string",
+          "description": "Category of vulnerability audit",
+          "enum": ["browser", "url", "password", "breach"]
+        },
+        "score": {
+          "type": "number",
+          "description": "Numeric posture or risk score (0-100)"
+        },
+        "severity": {
+          "type": "string",
+          "description": "Calculated threat or posture level",
+          "maxLength": 32
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief summary of scan findings",
+          "maxLength": 512
+        },
+        "target": {
+          "type": "string",
+          "description": "Audited domain, address, or target identifier",
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Server timestamp of scan execution",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "scanType", "score", "severity", "summary", "createdAt"]
+    },
+    "CyberLearning": {
+      "title": "CyberLearning",
+      "description": "Collective cyber intelligence and defensive rules synthesized from chats and threat scans",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique learning item ID",
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "description": "Type of cyber security learning",
+          "enum": ["threat_pattern", "privacy_insight", "scam_tactic", "defense_technique", "user_misconception"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Short title of learned insight",
+          "maxLength": 160
+        },
+        "summary": {
+          "type": "string",
+          "description": "Concise summary of the lesson or finding",
+          "maxLength": 500
+        },
+        "extractedInsight": {
+          "type": "string",
+          "description": "Deep actionable security takeaway synthesized by AI",
+          "maxLength": 1000
+        },
+        "actionableRule": {
+          "type": "string",
+          "description": "Direct rule of thumb for users",
+          "maxLength": 500
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "Origin of the learning",
+          "enum": ["chat_conversation", "threat_analysis", "user_observation"]
+        },
+        "confidence": {
+          "type": "number",
+          "description": "AI confidence rating from 0.0 to 1.0"
+        },
+        "upvotes": {
+          "type": "number",
+          "description": "Community validation upvotes count"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when synthesized",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "category", "title", "summary", "extractedInsight", "actionableRule", "sourceType", "confidence", "upvotes", "createdAt"]
+    },
+    "ThreatReport": {
+      "title": "ThreatReport",
+      "description": "Community-submitted cyber threat advisory report",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Report ID",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Author UID",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Author display handle",
+          "maxLength": 128
+        },
+        "threatType": {
+          "type": "string",
+          "description": "Type of cyber threat reported",
+          "enum": ["url", "sms", "email"]
+        },
+        "target": {
+          "type": "string",
+          "description": "Suspicious URL, phone number, or sender address",
+          "maxLength": 512
+        },
+        "description": {
+          "type": "string",
+          "description": "Contextual description of the threat",
+          "maxLength": 1000
+        },
+        "severity": {
+          "type": "string",
+          "description": "Threat severity",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Submission timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "authorId", "authorName", "threatType", "target", "description", "severity", "createdAt"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Health check document for connection verification",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Health check status"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User security defense profile and completed lesson progress"
+    },
+    "/users/{userId}/scans/{scanId}": {
+      "schema": "ScanRecord",
+      "description": "Historical audit and vulnerability scan logs"
+    },
+    "/cyber_learnings/{learningId}": {
+      "schema": "CyberLearning",
+      "description": "Collective cyber intelligence learned and synthesized from chats and scans"
+    },
+    "/threat_reports/{reportId}": {
+      "schema": "ThreatReport",
+      "description": "Crowdsourced cyber threat and phishing advisory feed"
+    },
+    "/test/{testId}": {
+      "schema": "TestConnection",
+      "description": "Health check connection probe"
+    }
+  }
+}

@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for UserProfile
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.streakDays is number && data.streakDays >= 0 && data.streakDays <= 3650 &&
+        data.completedTips is list && data.completedTips.size() <= 100 &&
+        data.completedGuides is list && data.completedGuides.size() <= 100 &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() <= 64 &&
+        data.keys().hasAll(['userId', 'streakDays', 'completedTips', 'completedGuides', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'email', 'displayName', 'streakDays', 'completedTips', 'completedGuides', 'createdAt', 'updatedAt']);
+    }
+
+    // Validation for ScanRecord
+    function isValidScanRecord(data, userId) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.userId == userId &&
+        data.scanType in ['browser', 'url', 'password', 'breach'] &&
+        data.score is number && data.score >= 0 && data.score <= 100 &&
+        data.severity is string && data.severity.size() <= 32 &&
+        data.summary is string && data.summary.size() <= 512 &&
+        (!('target' in data) || (data.target is string && data.target.size() <= 512)) &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.keys().hasAll(['id', 'userId', 'scanType', 'score', 'severity', 'summary', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'scanType', 'score', 'severity', 'summary', 'target', 'createdAt']);
+    }
+
+    // Validation for CyberLearning (AI Knowledge Base)
+    function isValidCyberLearning(data) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.category in ['threat_pattern', 'privacy_insight', 'scam_tactic', 'defense_technique', 'user_misconception'] &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 160 &&
+        data.summary is string && data.summary.size() > 0 && data.summary.size() <= 500 &&
+        data.extractedInsight is string && data.extractedInsight.size() <= 1000 &&
+        data.actionableRule is string && data.actionableRule.size() <= 500 &&
+        data.sourceType in ['chat_conversation', 'threat_analysis', 'user_observation'] &&
+        data.confidence is number && data.confidence >= 0 && data.confidence <= 1 &&
+        data.upvotes is number && data.upvotes >= 0 &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.keys().hasAll(['id', 'category', 'title', 'summary', 'extractedInsight', 'actionableRule', 'sourceType', 'confidence', 'upvotes', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'category', 'title', 'summary', 'extractedInsight', 'actionableRule', 'sourceType', 'confidence', 'upvotes', 'createdAt']);
+    }
+
+    // Validation for ThreatReport
+    function isValidThreatReport(data) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.authorId == request.auth.uid &&
+        data.authorName is string && data.authorName.size() <= 128 &&
+        data.threatType in ['url', 'sms', 'email'] &&
+        data.target is string && data.target.size() > 0 && data.target.size() <= 512 &&
+        data.description is string && data.description.size() <= 1000 &&
+        data.severity in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.keys().hasAll(['id', 'authorId', 'authorName', 'threatType', 'target', 'description', 'severity', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'authorId', 'authorName', 'threatType', 'target', 'description', 'severity', 'createdAt']);
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+
+      allow delete: if isOwner(userId);
+
+      // User Scan History subcollection
+      match /scans/{scanId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(scanId) &&
+          isValidScanRecord(incoming(), userId);
+
+        // Scan records are immutable
+        allow update: if false;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Collective Cyber Intelligence Base (Learned from everyday use and chats)
+    match /cyber_learnings/{learningId} {
+      // Readable by all users to learn and evolve together
+      allow read: if true;
+
+      // Can be written with valid schema
+      allow create: if isValidId(learningId) && isValidCyberLearning(incoming());
+
+      // Community upvoting
+      allow update: if isValidId(learningId) &&
+        isValidCyberLearning(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['upvotes']) &&
+        incoming().upvotes == existing().upvotes + 1;
+
+      allow delete: if false;
+    }
+
+    // Public Community Threat Reports Feed
+    match /threat_reports/{reportId} {
+      allow read: if true;
+
+      allow create: if isSignedIn() &&
+        isValidId(reportId) &&
+        isValidThreatReport(incoming());
+
+      allow update: if false;
+      allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+    }
+
+    // Health check connection test
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
